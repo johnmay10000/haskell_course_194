@@ -65,8 +65,9 @@ insert (LogMessage m t s) (Node l (LogMessage a b c) r) = case compare' t b of
                                            LESSTHAN -> Node (insert (LogMessage m t s) l) (LogMessage a b c) r
 
 sortLogMessages :: [LogMessage] -> MessageTree
-sortLogMessages [] = Leaf
-sortLogMessages (x:xs) = insert x (sortLogMessages xs)
+-- sortLogMessages [] = Leaf
+-- sortLogMessages (x:xs) = insert x (sortLogMessages xs)
+sortLogMessages = foldr insert Leaf
 
 inOrder :: MessageTree -> [LogMessage]
 inOrder Leaf = []
@@ -74,7 +75,17 @@ inOrder (Node l lm r) = inOrder l ++ [lm] ++ inOrder r
 
 
 whatWentWrong :: [LogMessage] -> [String]
+whatWentWrong [] = []
+whatWentWrong (x:xs) = case x of
+                        Unknown "Empty" -> whatWentWrong xs
+                        LogMessage m n s -> case m of
+                                              Error i -> case compare' i 50 of
+                                                        GREATERTHAN -> s : whatWentWrong xs
+                                                        LESSTHAN -> whatWentWrong xs
+                                                        EQUAL -> whatWentWrong xs
+                                              Info -> whatWentWrong xs
+                                              Warning -> whatWentWrong xs
 
 
-
+-- whatWentWrong  <$> (testParse parse 100 "sample.log")
 -- inOrder <$> (sortLogMessages <$> (testParse parse 100 "error.log"))

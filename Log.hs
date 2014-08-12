@@ -32,19 +32,49 @@ testWhatWentWrong parse whatWentWrong file
   = whatWentWrong . parse <$> readFile file
 
 parseMessage :: String -> LogMessage
-parseMessage [] = Unknown "Empty string"
+parseMessage [] = Unknown "Empty"
 parseMessage s = getLogMessage (words s)
 
 
 getLogMessage::[String] -> LogMessage
 getLogMessage [] = Unknown "Empty"
 getLogMessage (x:y:z:xs) = case x of
-                          "I" -> LogMessage Info (read(y)::Int) (unwords (z:xs))
-                          "E" -> LogMessage (Error (read(y)::Int)) (read(z)::Int) (unwords xs)
-                          "W" -> LogMessage Warning (read(y)::Int) (unwords (z:xs))
+                          "I" -> LogMessage Info (read y ::Int) (unwords (z:xs))
+                          "E" -> LogMessage (Error (read y ::Int)) (read z ::Int) (unwords xs)
+                          "W" -> LogMessage Warning (read y::Int) (unwords (z:xs))
 
 parse :: String -> [LogMessage]
 parse [] = []
-parse s = map (parseMessage) (lines(s))
+parse s = map parseMessage (lines s)
+
+data Comparison = GREATERTHAN
+                  | LESSTHAN
+                  | EQUAL
+
+compare' :: Int -> Int -> Comparison
+compare' x y
+  | x < y = LESSTHAN
+  | x > y = GREATERTHAN
+  | otherwise = EQUAL
+
+insert :: LogMessage -> MessageTree -> MessageTree
+insert (Unknown "Empty") mt = mt
+insert lm Leaf  = Node Leaf lm Leaf
+insert (LogMessage m t s) (Node l (LogMessage a b c) r) = case compare' t b of
+                                           GREATERTHAN -> Node l (LogMessage a b c) (insert (LogMessage m t s) r)
+                                           LESSTHAN -> Node (insert (LogMessage m t s) l) (LogMessage a b c) r
+
+sortLogMessages :: [LogMessage] -> MessageTree
+sortLogMessages [] = Leaf
+sortLogMessages (x:xs) = insert x (sortLogMessages xs)
+
+inOrder :: MessageTree -> [LogMessage]
+inOrder Leaf = []
+inOrder (Node l lm r) = inOrder l ++ [lm] ++ inOrder r
 
 
+whatWentWrong :: [LogMessage] -> [String]
+
+
+
+-- inOrder <$> (sortLogMessages <$> (testParse parse 100 "error.log"))
